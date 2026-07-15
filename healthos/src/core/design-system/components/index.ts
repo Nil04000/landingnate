@@ -13,6 +13,7 @@ export { RingProgress } from './RingProgress';
 export { Screen } from './Screen';
 export { ScoreDial } from './ScoreDial';
 export { Section } from './Section';
+export { SegmentedControl } from './SegmentedControl';
 export { SheetScaffold } from './SheetScaffold';
 export { Skeleton } from './Skeleton';
 export { Sparkline } from './Sparkline';
