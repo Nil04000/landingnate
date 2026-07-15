@@ -24,7 +24,9 @@ import { palette } from '@/core/design-system/tokens/palette';
 import { todayLocal } from '@/core/lib/dates';
 import { defaultGoals } from '@/core/lib/defaults';
 import type { DailyAggregate } from '@/core/db/repositories/aggregates.repository';
+import { InsightCard } from '@/features/insights/components/InsightCard';
 import { useDayAggregate, useLast7Days, useLatestWeight } from '@/queries/useDay';
+import { useInsightsList } from '@/queries/useInsights';
 
 const ICON_SIZE = 14;
 
@@ -54,6 +56,7 @@ export default function HomeScreen() {
   const { data: agg } = useDayAggregate(today);
   const { data: week } = useLast7Days();
   const { data: latestWeight } = useLatestWeight();
+  const { data: topInsights } = useInsightsList(2);
 
   const cards: CardSpec[] = [
     {
@@ -188,6 +191,25 @@ export default function HomeScreen() {
           <Text className="mt-3 text-footnote text-txt-faint">Tocá el dial para ver el porqué</Text>
         )}
       </Animated.View>
+
+      {topInsights && topInsights.length > 0 ? (
+        <Animated.View entering={FadeInDown.duration(durations.base).delay(2 * STAGGER_MS)}>
+          <Section
+            title="Insights"
+            trailing={
+              <PressableScale onPress={() => router.push('/insights')}>
+                <Text className="text-footnote text-tint">Ver todos</Text>
+              </PressableScale>
+            }
+          >
+            <View className="gap-2">
+              {topInsights.map((insight) => (
+                <InsightCard key={insight.id} insight={insight} compact />
+              ))}
+            </View>
+          </Section>
+        </Animated.View>
+      ) : null}
 
       <Section title="Hoy">
         <View className="flex-row flex-wrap justify-between">

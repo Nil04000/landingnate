@@ -12,6 +12,7 @@ import { db } from '@/core/db/client';
 import { useDbMigrations } from '@/core/db/migrate';
 import { runSeeds } from '@/core/db/seeds/run';
 import { palette } from '@/core/design-system/tokens/palette';
+import { InsightsScheduler } from '@/features/insights/components/InsightsScheduler';
 import { queryClient } from '@/queries/client';
 
 void SplashScreen.preventAutoHideAsync();
@@ -79,6 +80,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="light" />
+        <InsightsScheduler />
         <Stack
           screenOptions={{
             headerShown: false,

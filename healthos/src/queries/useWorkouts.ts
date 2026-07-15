@@ -5,6 +5,7 @@ import { haptic } from '@/core/design-system/haptics';
 import type { MuscleGroup } from '@/core/db/repositories/exercises.repository';
 import { epleyE1Rm } from '@/core/db/repositories/workouts.repository';
 import { computeAndStoreScore } from '@/features/health-score/engine/compute-day';
+import { scheduleInsightsRun } from '@/features/insights/engine/scheduler';
 
 import { repos } from './repos';
 
@@ -87,6 +88,7 @@ export function useWorkoutMutation<TArgs extends { dayDate: string; workoutId?: 
         void queryClient.invalidateQueries({ queryKey: ['workout', args.workoutId] });
       }
       void queryClient.invalidateQueries({ queryKey: ['exerciseHistory'] });
+      scheduleInsightsRun(() => void queryClient.invalidateQueries({ queryKey: ['insights'] }));
     },
   });
 }

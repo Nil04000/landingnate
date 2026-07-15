@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/core/db/client';
 import { haptic } from '@/core/design-system/haptics';
 import { computeAndStoreScore } from '@/features/health-score/engine/compute-day';
+import { scheduleInsightsRun } from '@/features/insights/engine/scheduler';
 
 import { repos } from './repos';
 
@@ -32,6 +33,7 @@ export function useLogMutation<TArgs extends { dayDate: string }>(
       void queryClient.invalidateQueries({ queryKey: ['dayEntries', dayDate] });
       void queryClient.invalidateQueries({ queryKey: ['range'] });
       void queryClient.invalidateQueries({ queryKey: ['latestWeight'] });
+      scheduleInsightsRun(() => void queryClient.invalidateQueries({ queryKey: ['insights'] }));
     },
   });
 }

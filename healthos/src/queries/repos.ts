@@ -6,6 +6,7 @@ import { DailyAggregatesRepository } from '@/core/db/repositories/aggregates.rep
 import { ExercisesRepository } from '@/core/db/repositories/exercises.repository';
 import { FoodsRepository } from '@/core/db/repositories/foods.repository';
 import { HydrationRepository } from '@/core/db/repositories/hydration.repository';
+import { InsightsRepository } from '@/core/db/repositories/insights.repository';
 import { LabsRepository } from '@/core/db/repositories/labs.repository';
 import { MealsRepository } from '@/core/db/repositories/meals.repository';
 import { ScoresRepository } from '@/core/db/repositories/scores.repository';
@@ -34,5 +35,6 @@ export const repos = {
   settings: new SettingsRepository(db),
   labs: new LabsRepository(db),
   scores: new ScoresRepository(db),
+  insights: new InsightsRepository(db),
   aggregates: new DailyAggregatesRepository(db),
 } as const;

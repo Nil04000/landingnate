@@ -4,6 +4,7 @@ import { db } from '@/core/db/client';
 import { haptic } from '@/core/design-system/haptics';
 import { microCoverage, nutrientKeyToSnake, sumTotals } from '@/core/lib/nutrition-math';
 import { computeAndStoreScore } from '@/features/health-score/engine/compute-day';
+import { scheduleInsightsRun } from '@/features/insights/engine/scheduler';
 
 import { repos } from './repos';
 
@@ -107,6 +108,7 @@ export function useMealMutation<TArgs extends { dayDate: string; mealId?: string
       void queryClient.invalidateQueries({ queryKey: ['range'] });
       if (args.mealId) void queryClient.invalidateQueries({ queryKey: ['meal', args.mealId] });
       void queryClient.invalidateQueries({ queryKey: ['mealTemplates'] });
+      scheduleInsightsRun(() => void queryClient.invalidateQueries({ queryKey: ['insights'] }));
     },
   });
 }
