@@ -20,10 +20,19 @@ export function useLabCatalog() {
     queryFn: () => {
       const panels = repos.labs.listPanels();
       const markers = repos.labs.listMarkers();
-      return panels.map((panel) => ({
+      const groups = panels.map((panel) => ({
         panel,
         markers: markers.filter((m) => m.panelId === panel.id),
       }));
+      // Marcadores custom sin panel → grupo "Otros" (persisten entre sesiones)
+      const orphans = markers.filter((m) => m.panelId == null);
+      if (orphans.length > 0) {
+        groups.push({
+          panel: { id: '_otros', name: 'Otros', code: 'custom', sortIndex: 999 } as (typeof panels)[number],
+          markers: orphans,
+        });
+      }
+      return groups;
     },
   });
 }
