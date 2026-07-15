@@ -1,5 +1,5 @@
 import { Minus, Plus } from 'lucide-react-native';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 
 import { haptic } from '../haptics';
@@ -20,7 +20,10 @@ type StepperProps = {
 export function Stepper({ value, onChange, step = 1, min = 0, max = 9999, display }: StepperProps) {
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const current = useRef(value);
-  current.current = value;
+
+  useEffect(() => {
+    current.current = value;
+  }, [value]);
 
   const bump = (dir: 1 | -1) => {
     const next = Math.min(max, Math.max(min, current.current + dir * step));
