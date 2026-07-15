@@ -3,7 +3,9 @@ import {
   Beer,
   Coffee,
   Droplets,
+  Dumbbell,
   Footprints,
+  HeartPulse,
   Moon,
   NotebookPen,
   Pill,
@@ -17,6 +19,8 @@ import { PressableScale, SheetScaffold } from '@/core/design-system/components';
 import { haptic } from '@/core/design-system/haptics';
 import { palette } from '@/core/design-system/tokens/palette';
 import { todayLocal } from '@/core/lib/dates';
+import { repos } from '@/queries/repos';
+import { useWorkoutMutation } from '@/queries/useWorkouts';
 
 type QuickAction = {
   key: string;
@@ -38,6 +42,8 @@ const ACTIONS: QuickAction[] = [
   { key: 'supplement', label: 'Suplementos', path: '/log-supplement', icon: <Pill color={palette.metric.labs} {...ICON} /> },
   { key: 'steps', label: 'Pasos', path: '/log-steps', icon: <Footprints color={palette.metric.activity} {...ICON} /> },
   { key: 'note', label: 'Nota', path: '/log-note', icon: <NotebookPen color={palette.text.secondary} {...ICON} /> },
+  { key: 'cardio', label: 'Cardio', path: '/log-cardio', icon: <HeartPulse color={palette.metric.mood} {...ICON} /> },
+  { key: 'workout', label: 'Entreno', path: '', icon: <Dumbbell color={palette.metric.training} {...ICON} /> },
 ];
 
 /** Hub del "+": grilla de accesos a todos los registros rápidos. */
@@ -45,18 +51,34 @@ export default function QuickAddSheet() {
   const params = useLocalSearchParams<{ date?: string }>();
   const date = params.date ?? todayLocal();
 
+  const startWorkout = useWorkoutMutation(
+    (args: { dayDate: string }) =>
+      repos.workouts.create({ dayDate: args.dayDate, type: 'strength', startedAt: Date.now() }),
+    { silent: true },
+  );
+
+  const onAction = (action: QuickAction) => {
+    haptic.select();
+    if (action.key === 'workout') {
+      startWorkout.mutate(
+        { dayDate: date },
+        {
+          onSuccess: ({ result }) => {
+            const workout = result as { id: string };
+            router.replace({ pathname: '/workout/active', params: { id: workout.id } } as Href);
+          },
+        },
+      );
+      return;
+    }
+    router.replace({ pathname: action.path, params: { date } } as Href);
+  };
+
   return (
     <SheetScaffold title="Registrar" subtitle="¿Qué querés anotar?">
       <View className="flex-row flex-wrap justify-between">
         {ACTIONS.map((action) => (
-          <PressableScale
-            key={action.key}
-            onPress={() => {
-              haptic.select();
-              router.replace({ pathname: action.path, params: { date } } as Href);
-            }}
-            className="mb-3 w-[31%]"
-          >
+          <PressableScale key={action.key} onPress={() => onAction(action)} className="mb-3 w-[31%]">
             <View className="items-center gap-2 rounded-card border border-stroke bg-surface-2 py-4">
               {action.icon}
               <Text className="text-footnote text-txt-dim">{action.label}</Text>
@@ -64,9 +86,6 @@ export default function QuickAddSheet() {
           </PressableScale>
         ))}
       </View>
-      <Text className="mt-2 text-center text-footnote text-txt-faint">
-        Los entrenamientos llegan en la Fase 4
-      </Text>
     </SheetScaffold>
   );
 }

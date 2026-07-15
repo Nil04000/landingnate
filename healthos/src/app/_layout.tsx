@@ -28,6 +28,7 @@ const SHEET_ROUTES = [
   '(sheets)/log-supplement',
   '(sheets)/log-steps',
   '(sheets)/log-note',
+  '(sheets)/log-cardio',
 ] as const;
 
 /** Flujos de edición presentados como modal de pantalla completa. */
@@ -108,6 +109,15 @@ export default function RootLayout() {
               }}
             />
           ))}
+          {/* Logger en vivo: fullScreenModal para que un swipe accidental no corte la sesión */}
+          <Stack.Screen
+            name="workout/active"
+            options={{
+              presentation: 'fullScreenModal',
+              gestureEnabled: false,
+              contentStyle: { backgroundColor: palette.canvas },
+            }}
+          />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>
