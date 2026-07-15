@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { db } from '@/core/db/client';
 import { haptic } from '@/core/design-system/haptics';
+import { computeAndStoreScore } from '@/features/health-score/engine/compute-day';
 
 import { repos } from './repos';
 
@@ -21,6 +23,7 @@ export function useLogMutation<TArgs extends { dayDate: string }>(
       write(args);
       repos.aggregates.markStale(args.dayDate);
       repos.aggregates.rebuildDay(args.dayDate);
+      computeAndStoreScore(db, args.dayDate);
       return Promise.resolve(args.dayDate);
     },
     onSuccess: (dayDate) => {

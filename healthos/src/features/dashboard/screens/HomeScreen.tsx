@@ -156,9 +156,11 @@ export default function HomeScreen() {
         className="mb-8 items-center"
       >
         <ScoreDial score={agg?.healthScore ?? null} />
-        <Text className="mt-3 text-footnote text-txt-dim">
-          El Health Score se activa en la Fase 7
-        </Text>
+        {agg?.healthScore == null ? (
+          <Text className="mt-3 text-footnote text-txt-dim">
+            Registrá sueño, agua, actividad y ánimo para activar tu Health Score
+          </Text>
+        ) : null}
       </Animated.View>
 
       <Section title="Hoy">
