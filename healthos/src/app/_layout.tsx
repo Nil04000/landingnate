@@ -32,7 +32,7 @@ const SHEET_ROUTES = [
 ] as const;
 
 /** Flujos de edición presentados como modal de pantalla completa. */
-const MODAL_ROUTES = ['meal/[id]', 'food/new'] as const;
+const MODAL_ROUTES = ['meal/[id]', 'food/new', 'labs/new-report'] as const;
 
 /**
  * Layout raíz: providers + gate de base de datos.
