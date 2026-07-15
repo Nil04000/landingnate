@@ -16,6 +16,20 @@ import { queryClient } from '@/queries/client';
 
 void SplashScreen.preventAutoHideAsync();
 
+/** Rutas del sistema de registro rápido — todas con presentación formSheet. */
+const SHEET_ROUTES = [
+  '(sheets)/quick-add',
+  '(sheets)/log-water',
+  '(sheets)/log-weight',
+  '(sheets)/log-sleep',
+  '(sheets)/log-caffeine',
+  '(sheets)/log-substance',
+  '(sheets)/log-wellbeing',
+  '(sheets)/log-supplement',
+  '(sheets)/log-steps',
+  '(sheets)/log-note',
+] as const;
+
 /**
  * Layout raíz: providers + gate de base de datos.
  * La UI no monta hasta que las migraciones corrieron y el catálogo está
@@ -68,6 +82,19 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" />
+          {SHEET_ROUTES.map((name) => (
+            <Stack.Screen
+              key={name}
+              name={name}
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: [0.78],
+                sheetCornerRadius: 28,
+                sheetGrabberVisible: false,
+                contentStyle: { backgroundColor: palette.surface },
+              }}
+            />
+          ))}
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>

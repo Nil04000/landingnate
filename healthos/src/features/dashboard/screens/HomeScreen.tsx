@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { router, type Href } from 'expo-router';
 import {
   Beef,
   Coffee,
@@ -18,14 +19,14 @@ import { brand } from '@/core/brand';
 import { MetricCard, Screen, ScoreDial, Section } from '@/core/design-system/components';
 import { STAGGER_MS, durations } from '@/core/design-system/tokens/motion';
 import { palette } from '@/core/design-system/tokens/palette';
+import { todayLocal } from '@/core/lib/dates';
+import { defaultGoals } from '@/core/lib/defaults';
+import type { DailyAggregate } from '@/core/db/repositories/aggregates.repository';
+import { useDayAggregate, useLast7Days, useLatestWeight } from '@/queries/useDay';
 
-/**
- * Dashboard de Inicio.
- * FASE 1: datos de ejemplo estáticos para validar el sistema de diseño.
- * En Fase 2 cada card se conecta a React Query sobre daily_aggregates.
- */
+const ICON_SIZE = 14;
 
-type DemoMetric = {
+type CardSpec = {
   key: string;
   label: string;
   value: number | null;
@@ -33,142 +34,155 @@ type DemoMetric = {
   decimals?: number;
   color: string;
   icon: React.ReactNode;
-  progress?: number;
+  progress?: number | null;
   spark?: (number | null)[];
-  trendPct?: number;
-  trendGoodDirection?: 'up' | 'down';
+  href?: string;
 };
 
-const ICON_SIZE = 14;
+function sparkOf(
+  days: (DailyAggregate | null)[] | undefined,
+  pick: (d: DailyAggregate) => number | null,
+): (number | null)[] {
+  return (days ?? []).map((d) => (d ? pick(d) : null));
+}
 
-const DEMO_METRICS: DemoMetric[] = [
-  {
-    key: 'weight',
-    label: 'Peso',
-    value: 82.4,
-    unit: 'kg',
-    decimals: 1,
-    color: palette.metric.score,
-    icon: <Scale color={palette.metric.score} size={ICON_SIZE} strokeWidth={2} />,
-    spark: [83.6, 83.4, 83.1, 83.2, 82.9, 82.6, 82.4],
-  },
-  {
-    key: 'steps',
-    label: 'Pasos',
-    value: 8432,
-    color: palette.metric.activity,
-    icon: <Footprints color={palette.metric.activity} size={ICON_SIZE} strokeWidth={2} />,
-    progress: 0.84,
-  },
-  {
-    key: 'sleep',
-    label: 'Sueño',
-    value: 7.3,
-    unit: 'h',
-    decimals: 1,
-    color: palette.metric.sleep,
-    icon: <Moon color={palette.metric.sleep} size={ICON_SIZE} strokeWidth={2} />,
-    spark: [6.5, 7.1, 6.8, 7.9, 7.2, 6.9, 7.3],
-  },
-  {
-    key: 'water',
-    label: 'Agua',
-    value: 1750,
-    unit: 'ml',
-    color: palette.metric.hydration,
-    icon: <Droplets color={palette.metric.hydration} size={ICON_SIZE} strokeWidth={2} />,
-    progress: 0.58,
-  },
-  {
-    key: 'kcal',
-    label: 'Calorías',
-    value: 2140,
-    unit: 'kcal',
-    color: palette.metric.nutrition,
-    icon: <Flame color={palette.metric.nutrition} size={ICON_SIZE} strokeWidth={2} />,
-    progress: 0.82,
-  },
-  {
-    key: 'protein',
-    label: 'Proteína',
-    value: 148,
-    unit: 'g',
-    color: palette.metric.nutrition,
-    icon: <Beef color={palette.metric.nutrition} size={ICON_SIZE} strokeWidth={2} />,
-    progress: 0.92,
-  },
-  {
-    key: 'caffeine',
-    label: 'Cafeína',
-    value: 220,
-    unit: 'mg',
-    color: palette.metric.caffeine,
-    icon: <Coffee color={palette.metric.caffeine} size={ICON_SIZE} strokeWidth={2} />,
-    trendPct: -18,
-    trendGoodDirection: 'down',
-  },
-  {
-    key: 'training',
-    label: 'Entrenamiento',
-    value: 52,
-    unit: 'min',
-    color: palette.metric.training,
-    icon: <Dumbbell color={palette.metric.training} size={ICON_SIZE} strokeWidth={2} />,
-    trendPct: 12,
-  },
-  {
-    key: 'mood',
-    label: 'Ánimo',
-    value: 4,
-    unit: '/ 5',
-    color: palette.metric.mood,
-    icon: <Smile color={palette.metric.mood} size={ICON_SIZE} strokeWidth={2} />,
-    spark: [3, 4, 3, 3, 4, 5, 4],
-  },
-];
-
+/** Dashboard de Inicio conectado a daily_aggregates (hoy + sparklines 7d). */
 export default function HomeScreen() {
-  const today = format(new Date(), "EEEE d 'de' MMMM", { locale: es });
+  const today = todayLocal();
+  const { data: agg } = useDayAggregate(today);
+  const { data: week } = useLast7Days();
+  const { data: latestWeight } = useLatestWeight();
+
+  const cards: CardSpec[] = [
+    {
+      key: 'weight',
+      label: 'Peso',
+      value: latestWeight?.weightKg ?? null,
+      unit: 'kg',
+      decimals: 1,
+      color: palette.metric.score,
+      icon: <Scale color={palette.metric.score} size={ICON_SIZE} strokeWidth={2} />,
+      spark: sparkOf(week, (d) => d.weightKg),
+      href: '/log-weight',
+    },
+    {
+      key: 'steps',
+      label: 'Pasos',
+      value: agg?.steps ?? null,
+      color: palette.metric.activity,
+      icon: <Footprints color={palette.metric.activity} size={ICON_SIZE} strokeWidth={2} />,
+      progress: agg?.steps != null ? agg.steps / defaultGoals.stepsPerDay : null,
+      href: '/log-steps',
+    },
+    {
+      key: 'sleep',
+      label: 'Sueño',
+      value: agg?.sleepMinutes != null ? agg.sleepMinutes / 60 : null,
+      unit: 'h',
+      decimals: 1,
+      color: palette.metric.sleep,
+      icon: <Moon color={palette.metric.sleep} size={ICON_SIZE} strokeWidth={2} />,
+      spark: sparkOf(week, (d) => (d.sleepMinutes != null ? d.sleepMinutes / 60 : null)),
+      href: '/log-sleep',
+    },
+    {
+      key: 'water',
+      label: 'Agua',
+      value: agg?.waterMl ?? null,
+      unit: 'ml',
+      color: palette.metric.hydration,
+      icon: <Droplets color={palette.metric.hydration} size={ICON_SIZE} strokeWidth={2} />,
+      progress: agg?.waterMl != null ? agg.waterMl / defaultGoals.waterMlPerDay : null,
+      href: '/log-water',
+    },
+    {
+      key: 'kcal',
+      label: 'Calorías',
+      value: agg?.kcal ?? null,
+      unit: 'kcal',
+      color: palette.metric.nutrition,
+      icon: <Flame color={palette.metric.nutrition} size={ICON_SIZE} strokeWidth={2} />,
+    },
+    {
+      key: 'protein',
+      label: 'Proteína',
+      value: agg?.proteinG ?? null,
+      unit: 'g',
+      color: palette.metric.nutrition,
+      icon: <Beef color={palette.metric.nutrition} size={ICON_SIZE} strokeWidth={2} />,
+    },
+    {
+      key: 'caffeine',
+      label: 'Cafeína',
+      value: agg?.caffeineMg ?? null,
+      unit: 'mg',
+      color: palette.metric.caffeine,
+      icon: <Coffee color={palette.metric.caffeine} size={ICON_SIZE} strokeWidth={2} />,
+      spark: sparkOf(week, (d) => d.caffeineMg),
+      href: '/log-caffeine',
+    },
+    {
+      key: 'training',
+      label: 'Entrenamiento',
+      value: agg?.workoutCount ? agg.workoutMinutes : null,
+      unit: 'min',
+      color: palette.metric.training,
+      icon: <Dumbbell color={palette.metric.training} size={ICON_SIZE} strokeWidth={2} />,
+    },
+    {
+      key: 'mood',
+      label: 'Ánimo',
+      value: agg?.mood ?? null,
+      unit: '/ 5',
+      decimals: 1,
+      color: palette.metric.mood,
+      icon: <Smile color={palette.metric.mood} size={ICON_SIZE} strokeWidth={2} />,
+      spark: sparkOf(week, (d) => d.mood),
+      href: '/log-wellbeing',
+    },
+  ];
 
   return (
     <Screen>
-      {/* Header */}
       <Animated.View entering={FadeInDown.duration(durations.base)} className="mb-6 mt-2">
-        <Text className="text-footnote capitalize text-txt-dim">{today}</Text>
+        <Text className="text-footnote capitalize text-txt-dim">
+          {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
+        </Text>
         <Text className="text-title1 text-txt">{brand.name}</Text>
       </Animated.View>
 
-      {/* Health Score */}
       <Animated.View
         entering={FadeInDown.duration(durations.base).delay(STAGGER_MS)}
         className="mb-8 items-center"
       >
-        <ScoreDial score={78} />
+        <ScoreDial score={agg?.healthScore ?? null} />
         <Text className="mt-3 text-footnote text-txt-dim">
-          Datos de ejemplo — Fase 1 del roadmap
+          El Health Score se activa en la Fase 7
         </Text>
       </Animated.View>
 
-      {/* Grilla de métricas */}
       <Section title="Hoy">
         <View className="flex-row flex-wrap justify-between">
-          {DEMO_METRICS.map((m, i) => (
+          {cards.map((card, i) => (
             <Animated.View
-              key={m.key}
+              key={card.key}
               entering={FadeInDown.duration(durations.base).delay((i + 2) * STAGGER_MS)}
               className="mb-3 w-[48.5%]"
             >
               <MetricCard
-                label={m.label}
-                value={m.value}
-                unit={m.unit}
-                decimals={m.decimals ?? 0}
-                color={m.color}
-                icon={m.icon}
-                progress={m.progress ?? null}
-                spark={m.spark ?? []}
-                trendPct={m.trendPct ?? null}
-                trendGoodDirection={m.trendGoodDirection ?? 'up'}
+                label={card.label}
+                value={card.value}
+                unit={card.unit}
+                decimals={card.decimals ?? 0}
+                color={card.color}
+                icon={card.icon}
+                progress={card.progress ?? null}
+                spark={card.spark ?? []}
+                onPress={
+                  card.href
+                    ? () => router.push({ pathname: card.href, params: { date: today } } as Href)
+                    : undefined
+                }
               />
             </Animated.View>
           ))}
