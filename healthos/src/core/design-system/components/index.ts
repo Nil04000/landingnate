@@ -3,6 +3,7 @@ export { Card } from './Card';
 export { Chip } from './Chip';
 export { DateStrip } from './DateStrip';
 export { EmptyState } from './EmptyState';
+export { HeatmapCalendar } from './HeatmapCalendar';
 export { ListRow } from './ListRow';
 export { MetricCard } from './MetricCard';
 export { NumericKeypad } from './NumericKeypad';

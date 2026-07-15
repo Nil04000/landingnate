@@ -3,6 +3,7 @@ import { es } from 'date-fns/locale';
 import { router, type Href } from 'expo-router';
 import {
   Beef,
+  CalendarDays,
   Coffee,
   Droplets,
   Dumbbell,
@@ -16,7 +17,8 @@ import { Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { brand } from '@/core/brand';
-import { MetricCard, Screen, ScoreDial, Section } from '@/core/design-system/components';
+import { MetricCard, PressableScale, Screen, ScoreDial, Section } from '@/core/design-system/components';
+import { haptic } from '@/core/design-system/haptics';
 import { STAGGER_MS, durations } from '@/core/design-system/tokens/motion';
 import { palette } from '@/core/design-system/tokens/palette';
 import { todayLocal } from '@/core/lib/dates';
@@ -144,23 +146,47 @@ export default function HomeScreen() {
 
   return (
     <Screen>
-      <Animated.View entering={FadeInDown.duration(durations.base)} className="mb-6 mt-2">
-        <Text className="text-footnote capitalize text-txt-dim">
-          {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
-        </Text>
-        <Text className="text-title1 text-txt">{brand.name}</Text>
+      <Animated.View
+        entering={FadeInDown.duration(durations.base)}
+        className="mb-6 mt-2 flex-row items-end justify-between"
+      >
+        <View>
+          <Text className="text-footnote capitalize text-txt-dim">
+            {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
+          </Text>
+          <Text className="text-title1 text-txt">{brand.name}</Text>
+        </View>
+        <PressableScale
+          onPress={() => {
+            haptic.select();
+            router.push('/calendar');
+          }}
+        >
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-surface-2">
+            <CalendarDays color="#A1A1AA" size={18} strokeWidth={1.8} />
+          </View>
+        </PressableScale>
       </Animated.View>
 
       <Animated.View
         entering={FadeInDown.duration(durations.base).delay(STAGGER_MS)}
         className="mb-8 items-center"
       >
-        <ScoreDial score={agg?.healthScore ?? null} />
+        <PressableScale
+          onPress={() => {
+            haptic.select();
+            router.push(`/score/${today}`);
+          }}
+        >
+          <ScoreDial score={agg?.healthScore ?? null} />
+        </PressableScale>
         {agg?.healthScore == null ? (
           <Text className="mt-3 text-footnote text-txt-dim">
             Registrá sueño, agua, actividad y ánimo para activar tu Health Score
           </Text>
-        ) : null}
+        ) : (
+          <Text className="mt-3 text-footnote text-txt-faint">Tocá el dial para ver el porqué</Text>
+        )}
       </Animated.View>
 
       <Section title="Hoy">
