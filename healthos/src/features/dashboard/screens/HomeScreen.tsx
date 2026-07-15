@@ -11,6 +11,7 @@ import {
   Footprints,
   Moon,
   Scale,
+  Settings2,
   Smile,
 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
@@ -159,16 +160,28 @@ export default function HomeScreen() {
           </Text>
           <Text className="text-title1 text-txt">{brand.name}</Text>
         </View>
-        <PressableScale
-          onPress={() => {
-            haptic.select();
-            router.push('/calendar');
-          }}
-        >
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-surface-2">
-            <CalendarDays color="#A1A1AA" size={18} strokeWidth={1.8} />
-          </View>
-        </PressableScale>
+        <View className="flex-row gap-2">
+          <PressableScale
+            onPress={() => {
+              haptic.select();
+              router.push('/calendar');
+            }}
+          >
+            <View className="h-9 w-9 items-center justify-center rounded-full bg-surface-2">
+              <CalendarDays color="#A1A1AA" size={18} strokeWidth={1.8} />
+            </View>
+          </PressableScale>
+          <PressableScale
+            onPress={() => {
+              haptic.select();
+              router.push('/settings');
+            }}
+          >
+            <View className="h-9 w-9 items-center justify-center rounded-full bg-surface-2">
+              <Settings2 color="#A1A1AA" size={18} strokeWidth={1.8} />
+            </View>
+          </PressableScale>
+        </View>
       </Animated.View>
 
       <Animated.View
