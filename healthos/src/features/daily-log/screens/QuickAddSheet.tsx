@@ -9,6 +9,7 @@ import {
   Pill,
   Scale,
   Smile,
+  Utensils,
 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
@@ -27,6 +28,7 @@ type QuickAction = {
 const ICON = { size: 22, strokeWidth: 1.8 } as const;
 
 const ACTIONS: QuickAction[] = [
+  { key: 'meal', label: 'Comida', path: '/nutrition', icon: <Utensils color={palette.metric.nutrition} {...ICON} /> },
   { key: 'water', label: 'Agua', path: '/log-water', icon: <Droplets color={palette.metric.hydration} {...ICON} /> },
   { key: 'weight', label: 'Peso', path: '/log-weight', icon: <Scale color={palette.metric.score} {...ICON} /> },
   { key: 'sleep', label: 'Sueño', path: '/log-sleep', icon: <Moon color={palette.metric.sleep} {...ICON} /> },
@@ -63,7 +65,7 @@ export default function QuickAddSheet() {
         ))}
       </View>
       <Text className="mt-2 text-center text-footnote text-txt-faint">
-        Comidas y entrenamientos llegan en las Fases 3 y 4
+        Los entrenamientos llegan en la Fase 4
       </Text>
     </SheetScaffold>
   );

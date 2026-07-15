@@ -3,7 +3,10 @@ import { ActivityRepository } from '@/core/db/repositories/activity.repository';
 import { BodyRepository } from '@/core/db/repositories/body.repository';
 import { CompoundsRepository } from '@/core/db/repositories/compounds.repository';
 import { DailyAggregatesRepository } from '@/core/db/repositories/aggregates.repository';
+import { FoodsRepository } from '@/core/db/repositories/foods.repository';
 import { HydrationRepository } from '@/core/db/repositories/hydration.repository';
+import { MealsRepository } from '@/core/db/repositories/meals.repository';
+import { SettingsRepository } from '@/core/db/repositories/settings.repository';
 import { SleepRepository } from '@/core/db/repositories/sleep.repository';
 import { SubstancesRepository } from '@/core/db/repositories/substances.repository';
 import { WellbeingRepository } from '@/core/db/repositories/wellbeing.repository';
@@ -22,5 +25,8 @@ export const repos = {
   wellbeing: new WellbeingRepository(db),
   compounds: new CompoundsRepository(db),
   workouts: new WorkoutsRepository(db),
+  foods: new FoodsRepository(db),
+  meals: new MealsRepository(db),
+  settings: new SettingsRepository(db),
   aggregates: new DailyAggregatesRepository(db),
 } as const;

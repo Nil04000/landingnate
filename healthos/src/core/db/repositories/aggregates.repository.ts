@@ -1,11 +1,14 @@
-import { and, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
 
-import { dailyAggregates } from '../schema';
+import { microCoverage } from '@/core/lib/nutrition-math';
+
+import { compoundDefinitions, compoundIntakes, dailyAggregates, nutrientTargets } from '../schema';
 import type { AppSqliteDb } from '../types';
 import { ActivityRepository } from './activity.repository';
 import { BodyRepository } from './body.repository';
 import { CompoundsRepository } from './compounds.repository';
 import { HydrationRepository } from './hydration.repository';
+import { MealsRepository } from './meals.repository';
 import { SleepRepository } from './sleep.repository';
 import { SubstancesRepository } from './substances.repository';
 import { WellbeingRepository } from './wellbeing.repository';
@@ -28,6 +31,7 @@ export class DailyAggregatesRepository {
   private readonly wellbeing: WellbeingRepository;
   private readonly compounds: CompoundsRepository;
   private readonly workouts: WorkoutsRepository;
+  private readonly meals: MealsRepository;
 
   constructor(private readonly db: AppSqliteDb) {
     this.sleep = new SleepRepository(db);
@@ -38,6 +42,7 @@ export class DailyAggregatesRepository {
     this.wellbeing = new WellbeingRepository(db);
     this.compounds = new CompoundsRepository(db);
     this.workouts = new WorkoutsRepository(db);
+    this.meals = new MealsRepository(db);
   }
 
   /** Marca el día como sucio (lo llama toda mutación de dominio). */
@@ -121,6 +126,43 @@ export class DailyAggregatesRepository {
       .reduce((s, e) => s + e.quantity, 0);
     const vapeSessions = subs.filter((e) => e.type === 'vape').reduce((s, e) => s + e.quantity, 0);
 
+    // ── Nutrición (comidas + kcal/cafeína/alcohol de sustancias) ─
+    const { totals: mealTotals, mealCount } = this.meals.dayTotals(dayDate);
+    const substanceKcal = subs.reduce((s, e) => s + (e.kcal ?? 0), 0);
+    const hasNutrition = mealCount > 0;
+    const totalCaffeineMg = caffeineMg + mealTotals.caffeineMg;
+    const totalAlcoholUnits = alcoholUnits + mealTotals.alcoholG / 10;
+
+    let microCoveragePct: number | null = null;
+    if (hasNutrition) {
+      const targets = this.db
+        .select({ nutrientKey: nutrientTargets.nutrientKey, rdaAmount: nutrientTargets.rdaAmount })
+        .from(nutrientTargets)
+        .all();
+      // Aportes de suplementos linkeados a un nutriente (dosis en la unidad
+      // canónica del target; conversión IU↔µg pendiente para fase posterior)
+      const linkedIntakes = this.db
+        .select({
+          nutrientKey: compoundDefinitions.linkedNutrientKey,
+          doseAmount: compoundIntakes.doseAmount,
+          skipped: compoundIntakes.skipped,
+          deletedAt: compoundIntakes.deletedAt,
+        })
+        .from(compoundIntakes)
+        .innerJoin(compoundDefinitions, eq(compoundIntakes.compoundId, compoundDefinitions.id))
+        .where(
+          and(eq(compoundIntakes.dayDate, dayDate), isNotNull(compoundDefinitions.linkedNutrientKey)),
+        )
+        .all();
+      const supplementExtras: Record<string, number> = {};
+      for (const intake of linkedIntakes) {
+        if (intake.skipped || intake.deletedAt != null || !intake.nutrientKey) continue;
+        supplementExtras[intake.nutrientKey] =
+          (supplementExtras[intake.nutrientKey] ?? 0) + intake.doseAmount;
+      }
+      microCoveragePct = microCoverage(mealTotals, targets, supplementExtras).averagePct;
+    }
+
     // ── Cuerpo ───────────────────────────────────────────────────
     const measurements = this.body.listByDay(dayDate);
     const withWeight = measurements.find((m) => m.weightKg != null);
@@ -135,6 +177,7 @@ export class DailyAggregatesRepository {
     const modules = [
       sessions.length > 0,
       hydrationCount > 0,
+      hasNutrition,
       Object.values(subjective).some((v) => v != null),
       measurements.length > 0 || activity != null,
       subs.length > 0,
@@ -154,11 +197,21 @@ export class DailyAggregatesRepository {
       workoutMinutes,
       strengthVolumeKg,
       waterMl: hydrationCount > 0 ? waterMl : null,
-      caffeineMg: subs.length > 0 ? caffeineMg : null,
+      caffeineMg: subs.length > 0 || (hasNutrition && totalCaffeineMg > 0) ? totalCaffeineMg : null,
       lastCaffeineHour,
-      alcoholUnits: subs.length > 0 ? alcoholUnits : null,
+      alcoholUnits: subs.length > 0 || (hasNutrition && totalAlcoholUnits > 0) ? totalAlcoholUnits : null,
       cigarettes: subs.length > 0 ? cigarettes : null,
       vapeSessions: subs.length > 0 ? vapeSessions : null,
+      kcal: hasNutrition ? mealTotals.kcal + substanceKcal : null,
+      proteinG: hasNutrition ? mealTotals.proteinG : null,
+      carbsG: hasNutrition ? mealTotals.carbsG : null,
+      fatG: hasNutrition ? mealTotals.fatG : null,
+      fiberG: hasNutrition ? mealTotals.fiberG : null,
+      sugarG: hasNutrition ? mealTotals.sugarG : null,
+      saturatedFatG: hasNutrition ? mealTotals.saturatedFatG : null,
+      sodiumMg: hasNutrition ? mealTotals.sodiumMg : null,
+      mealCount,
+      microCoveragePct,
       weightKg: withWeight?.weightKg ?? null,
       bodyFatPct: withFat?.bodyFatPct ?? null,
       mood: subjective.mood,

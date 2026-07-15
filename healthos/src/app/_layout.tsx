@@ -30,6 +30,9 @@ const SHEET_ROUTES = [
   '(sheets)/log-note',
 ] as const;
 
+/** Flujos de edición presentados como modal de pantalla completa. */
+const MODAL_ROUTES = ['meal/[id]', 'food/new'] as const;
+
 /**
  * Layout raíz: providers + gate de base de datos.
  * La UI no monta hasta que las migraciones corrieron y el catálogo está
@@ -92,6 +95,16 @@ export default function RootLayout() {
                 sheetCornerRadius: 28,
                 sheetGrabberVisible: false,
                 contentStyle: { backgroundColor: palette.surface },
+              }}
+            />
+          ))}
+          {MODAL_ROUTES.map((name) => (
+            <Stack.Screen
+              key={name}
+              name={name}
+              options={{
+                presentation: 'modal',
+                contentStyle: { backgroundColor: palette.canvas },
               }}
             />
           ))}
