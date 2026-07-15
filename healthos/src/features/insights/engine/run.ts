@@ -52,6 +52,24 @@ function emptyAggregate(dayDate: string): DailyAggregate {
   };
 }
 
+/**
+ * Serie DENSA de días [hoy-windowDays+1 .. hoy]: días sin fila entran como
+ * agregados vacíos (mantiene alineación temporal). La usan el motor de
+ * insights y las herramientas del asistente.
+ */
+export function loadDenseDays(db: AppSqliteDb, windowDays: number, now = Date.now()): DayRow[] {
+  const aggregates = new DailyAggregatesRepository(db);
+  aggregates.rebuildStale();
+  const today = todayLocal(new Date(now));
+  const from = daysAgoLocal(windowDays - 1, new Date(now));
+  const rows = aggregates.getRange(from, today);
+  const byDay = new Map(rows.map((r) => [r.dayDate, r]));
+  return eachDayLocal(from, today).map((day) => ({
+    day,
+    agg: byDay.get(day) ?? emptyAggregate(day),
+  }));
+}
+
 export type InsightsRunResult = {
   evaluated: number;
   findings: number;
@@ -71,19 +89,9 @@ export type InsightsRunResult = {
  * 5. expira hallazgos vencidos
  */
 export function runInsights(db: AppSqliteDb, now = Date.now()): InsightsRunResult {
-  const aggregates = new DailyAggregatesRepository(db);
   const insightsRepo = new InsightsRepository(db);
-
-  aggregates.rebuildStale();
-
+  const days = loadDenseDays(db, WINDOW_DAYS, now);
   const today = todayLocal(new Date(now));
-  const from = daysAgoLocal(WINDOW_DAYS - 1, new Date(now));
-  const rows = aggregates.getRange(from, today);
-  const byDay = new Map(rows.map((r) => [r.dayDate, r]));
-  const days: DayRow[] = eachDayLocal(from, today).map((day) => ({
-    day,
-    agg: byDay.get(day) ?? emptyAggregate(day),
-  }));
 
   const catalog = buildCatalog();
   const week = isoWeekOf(today);
